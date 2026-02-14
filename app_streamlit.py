@@ -228,6 +228,9 @@ if run_btn:
                 "Preço": st.column_config.NumberColumn("Preço", format="R$ %.2f"),
                 "Volume M (R$)": st.column_config.NumberColumn("Vol (M)", format="%.1f M"),
                 "Sinal": st.column_config.TextColumn("Sinal"),
+                "K_80": None,   # Ocultar
+                "K_170": None,  # Ocultar
+                "RSI": None     # Ocultar
             }
         )
         
