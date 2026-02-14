@@ -100,17 +100,28 @@ def detect_divergence(df, rsi_series, signal_type):
             
     return False
 
-def get_signal(row, df, rsi_series, use_rsi_filter=False):
+def get_signal(row, df, rsi_series, k80_series, use_rsi_filter=False):
     # 1. Stoch Check (v4 Logic)
     kb = row['K_80']
     ky = row['K_170']
     
+    # New: K80 Slope Check
+    try:
+        prev_k80 = k80_series.iloc[-2]
+        curr_k80 = k80_series.iloc[-1]
+    except:
+        return "" # Not enough data
+        
     stoch_signal = ""
     if not (pd.isna(kb) or pd.isna(ky)):
             if kb < 20 and kb > ky:
-                stoch_signal = "BUY"
+                # BUY Slope Logic: Current >= Prev (Rising or Flat)
+                if curr_k80 >= prev_k80:
+                    stoch_signal = "BUY"
             elif kb > 80 and kb < ky:
-                stoch_signal = "SELL"
+                # SELL Slope Logic: Current <= Prev (Falling or Flat)
+                if curr_k80 <= prev_k80:
+                    stoch_signal = "SELL"
     
     if not stoch_signal:
         return ""
@@ -161,7 +172,10 @@ def run_scan(tickers, use_rsi_filter, status_placeholder, progress_bar):
             if len(df) < 200: continue
 
             avg_vol = df['Volume'].iloc[-20:].mean() * df['Close'].iloc[-1]
-            k80 = calc_stoch_k(df, 80).iloc[-1]
+            
+            k80_series = calc_stoch_k(df, 80)
+            k80 = k80_series.iloc[-1]
+            
             k170 = calc_stoch_k(df, 170).iloc[-1]
             
             rsi_series = calc_rsi(df, 14)
@@ -180,7 +194,7 @@ def run_scan(tickers, use_rsi_filter, status_placeholder, progress_bar):
                 'Sinal': ''
             }
             
-            row_data['Sinal'] = get_signal(row_data, df, rsi_series, use_rsi_filter)
+            row_data['Sinal'] = get_signal(row_data, df, rsi_series, k80_series, use_rsi_filter)
             
             if row_data['Sinal'] != "":
                 results.append(row_data)
