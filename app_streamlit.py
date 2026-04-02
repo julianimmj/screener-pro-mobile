@@ -340,8 +340,11 @@ st.sidebar.markdown("## 🦅 Painel de Controle")
 st.sidebar.markdown("Configure a densidade analítica e o motor de decisão do algoritmo.")
 
 st.sidebar.markdown("---")
-fmfi_filter_on = st.sidebar.toggle("🌐 Confirmação Extrema FMFI", value=True, help="Ativa a confluência via Fourier Transform em janela diária (Ontem/Hoje)")
-rsi_filter_on = st.sidebar.toggle("📉 Filtro Divergência IFR", value=False, help="Restringe ações a pivots divergentes no Índice de Força Relativa.")
+fmfi_filter_on = st.sidebar.toggle("🌐 Confirmação Extrema FMFI", value=True)
+st.sidebar.markdown("<p style='font-size:0.85rem; color:#94a3b8; font-weight:300; margin-bottom:15px; line-height:1.4;'>Garante através da <strong>Transformada de Fourier</strong> que a recomendação só seja exibida se o ativo estiver em uma zona aguda de sobrecompra (VENDA) ou sobrevivência (COMPRA). Minimiza drasticamente os ruídos.</p>", unsafe_allow_html=True)
+
+rsi_filter_on = st.sidebar.toggle("📉 Filtro Divergência IFR", value=False)
+st.sidebar.markdown("<p style='font-size:0.85rem; color:#94a3b8; font-weight:300; margin-bottom:15px; line-height:1.4;'>Exige visualmente uma <strong>divergência</strong> clássica entre o fluxo do preço e o momentum (IFR). Se o preço fez fundo duplo mais baixo e o IFR fez fundo mais alto, a compra é aprovada.</p>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
 run_btn = st.sidebar.button("INICIAR SCAN PROFUNDO", type="primary", use_container_width=True)
