@@ -360,25 +360,7 @@ if run_btn:
         for idx, row in df.iterrows():
             badge_class = "badge-buy" if "COMPRA" in row['Sinal'] else "badge-sell"
             
-            card_html = f"""
-<div class="glass-card">
-    <div class="asset-info">
-        <span class="ticker">{row['Ticker']}</span>
-        <span class="price">R$ {row['Preço']:.2f}</span>
-    </div>
-    
-    <div class="metrics-info">
-        <div class="metric-box">
-            <span class="metric-lbl">Volume</span>
-            <span class="metric-val">{row['Volume M (R$)']}M</span>
-        </div>
-    </div>
-    
-    <div class="{badge_class}">
-        {row['Sinal']}
-    </div>
-</div>
-"""
+            card_html = f'<div class="glass-card"><div class="asset-info"><span class="ticker">{row["Ticker"]}</span><span class="price">R$ {row["Preço"]:.2f}</span></div><div class="metrics-info"><div class="metric-box"><span class="metric-lbl">Volume</span><span class="metric-val">{row["Volume M (R$)"]}M</span></div></div><div class="{badge_class}">{row["Sinal"]}</div></div>'
             st.markdown(card_html, unsafe_allow_html=True)
             
     else:
