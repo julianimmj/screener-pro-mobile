@@ -172,6 +172,9 @@ def run_scan(tickers, use_rsi_filter, status_placeholder, progress_bar):
             if len(df) < 200: continue
 
             avg_vol = df['Volume'].iloc[-20:].mean() * df['Close'].iloc[-1]
+            is_bdr = ticker.endswith(('34.SA', '35.SA', '39.SA'))
+            if not is_bdr and avg_vol < 1_000_000:
+                continue
             
             k80_series = calc_stoch_k(df, 80)
             k80 = k80_series.iloc[-1]
