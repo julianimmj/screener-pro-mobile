@@ -3,9 +3,10 @@ import pandas as pd
 import yfinance as yf
 import numpy as np
 from datetime import datetime
+from fmfi import get_fmfi_signals
 
 # =====================================================
-# CONFIGURAÇÃO DA PÁGINA
+# CONFIGURAÇÃO DA PÁGINA E CSS
 # =====================================================
 st.set_page_config(
     page_title="Screener Pro Mobile",
@@ -14,8 +15,127 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+
+/* Typography & Deep Dark Gradient Background */
+html, body, [class*="css"]  {
+    font-family: 'Outfit', sans-serif !important;
+}
+.stApp {
+    background: linear-gradient(135deg, #0e1117 0%, #1a1e29 100%);
+    color: #e2e8f0;
+}
+
+/* Glassmorphism Title */
+.main-title {
+    font-size: 2.8rem;
+    font-weight: 700;
+    background: -webkit-linear-gradient(45deg, #00E676, #00B0FF);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0px;
+    padding-bottom: 0px;
+}
+.subtitle {
+    color: #94a3b8;
+    font-weight: 300;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    letter-spacing: 0.5px;
+}
+
+/* Stylish Cards for Results */
+.glass-card {
+    background: rgba(30, 41, 59, 0.4);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.glass-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 230, 118, 0.1);
+    border: 1px solid rgba(0, 230, 118, 0.2);
+}
+
+.asset-info {
+    display: flex;
+    flex-direction: column;
+}
+.ticker {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #f8fafc;
+    letter-spacing: 1px;
+}
+.price {
+    font-size: 1rem;
+    color: #cbd5e1;
+}
+
+.metrics-info {
+    display: flex;
+    gap: 1.5rem;
+    text-align: center;
+}
+.metric-box {
+    display: flex;
+    flex-direction: column;
+}
+.metric-lbl {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #64748b;
+    font-weight: 600;
+}
+.metric-val {
+    font-size: 1.1rem;
+    color: #e2e8f0;
+    font-weight: 400;
+}
+
+/* Signal Badges */
+.badge-buy {
+    background: rgba(0, 230, 118, 0.15);
+    color: #00E676;
+    border: 1px solid rgba(0, 230, 118, 0.3);
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    box-shadow: 0 0 10px rgba(0, 230, 118, 0.2);
+}
+.badge-sell {
+    background: rgba(255, 23, 68, 0.15);
+    color: #FF1744;
+    border: 1px solid rgba(255, 23, 68, 0.3);
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    box-shadow: 0 0 10px rgba(255, 23, 68, 0.2);
+}
+
+/* Sidebar Custom */
+.stSidebar {
+    background-color: rgba(15, 23, 42, 0.95);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+</style>
+""", unsafe_allow_html=True)
+
 # =====================================================
-# LÓGICA DE NEGÓCIO (Replicada da v6)
+# LÓGICA DE NEGÓCIO
 # =====================================================
 
 TICKERS_BASE = [
@@ -69,91 +189,87 @@ def detect_divergence(df, rsi_series, signal_type):
     current_price = df['Close'].iloc[-1]
     current_rsi = rsi_series.iloc[-1]
     
-    # Slice recent history (excluding current candle to find prior pivot)
-    # We look at [-30:-2] to find a completed pivot
     history_price = df['Close'].iloc[-lookback:-2]
     history_rsi = rsi_series.iloc[-lookback:-2]
     
     if signal_type == "BUY":
-        # Bullish Divergence: Price Lower Low, RSI Higher Low
         prev_low_idx = history_price.idxmin()
         prev_low_price = history_price.min()
         try:
             prev_low_rsi = rsi_series.loc[prev_low_idx]
         except:
             return False 
-        
         if current_price < prev_low_price and current_rsi > prev_low_rsi:
             return True
             
     elif signal_type == "SELL":
-        # Bearish Divergence: Price Higher High, RSI Lower High
         prev_high_idx = history_price.idxmax()
         prev_high_price = history_price.max()
         try:
             prev_high_rsi = rsi_series.loc[prev_high_idx]
         except:
             return False
-
         if current_price > prev_high_price and current_rsi < prev_high_rsi:
             return True
             
     return False
 
-def get_signal(row, df, rsi_series, k80_series, use_rsi_filter=False):
-    # 1. Stoch Check (v4 Logic)
+def get_signal(row, df, rsi_series, k80_series, use_rsi_filter=False, use_fmfi_filter=True):
     kb = row['K_80']
     ky = row['K_170']
     
-    # New: K80 Slope Check
     try:
         prev_k80 = k80_series.iloc[-2]
         curr_k80 = k80_series.iloc[-1]
     except:
-        return "" # Not enough data
+        return "" 
         
     stoch_signal = ""
     if not (pd.isna(kb) or pd.isna(ky)):
             if kb < 20 and kb > ky:
-                # BUY Slope Logic: Current >= Prev (Rising or Flat)
                 if curr_k80 >= prev_k80:
                     stoch_signal = "BUY"
             elif kb > 80 and kb < ky:
-                # SELL Slope Logic: Current <= Prev (Falling or Flat)
                 if curr_k80 <= prev_k80:
                     stoch_signal = "SELL"
     
     if not stoch_signal:
         return ""
-
-    # Se filtro DESLIGADO, retorna o sinal puro
-    if not use_rsi_filter:
-        return f"COMPRA (Stoch)" if stoch_signal == "BUY" else f"VENDA (Stoch)"
-
-    # 2. RSI Zone Check & Divergence Check (FILTRO LIGADO)
-    current_rsi = rsi_series.iloc[-1]
-    
-    if stoch_signal == "BUY":
-        if current_rsi < 35: # Using 35 as tolerance for "oversold area"
-            if detect_divergence(df, rsi_series, "BUY"):
-                return f"COMPRA (Div {round(current_rsi,0)})"
-    
-    elif stoch_signal == "SELL":
-        if current_rsi > 65: # Tolerance for overbought
-            if detect_divergence(df, rsi_series, "SELL"):
-                return f"VENDA (Div {round(current_rsi,0)})"
         
+    if use_fmfi_filter:
+        try:
+            fmfi_sig = get_fmfi_signals(df)
+            if stoch_signal == "BUY" and not fmfi_sig['fmfi_firm_buy']:
+                return ""
+            if stoch_signal == "SELL" and not fmfi_sig['fmfi_firm_sell']:
+                return ""
+        except Exception:
+            return ""
+
+    if not use_rsi_filter:
+        return f"COMPRA" if stoch_signal == "BUY" else f"VENDA"
+
+    current_rsi = rsi_series.iloc[-1]
+    if stoch_signal == "BUY":
+        if current_rsi < 35:
+            if detect_divergence(df, rsi_series, "BUY"):
+                return f"COMPRA"
+    elif stoch_signal == "SELL":
+        if current_rsi > 65:
+            if detect_divergence(df, rsi_series, "SELL"):
+                return f"VENDA"
+                
     return ""
 
-def run_scan(tickers, use_rsi_filter, status_placeholder, progress_bar):
+def run_scan(tickers, use_rsi_filter, use_fmfi_filter, status_placeholder, progress_bar):
     results = []
     total = len(tickers)
     
-    status_placeholder.text(f"Baixando dados para {total} ativos...")
-    data = yf.download(tickers, period="2y", group_by='ticker', progress=False, auto_adjust=True, threads=True)
+    status_placeholder.markdown("*(📡) Extraindo e vetorizando o mercado em 1d (Nuvem de Alta Performance)...*")
+    data = yf.download(tickers, period="2y", interval="1d", group_by='ticker', progress=False, auto_adjust=True, threads=True)
     
     if data is None or data.empty:
-        st.error("ERRO: Nenhum dado baixado.")
+        st.error("ERRO: Nenhum dado baixado. Servidores YF indisponíveis.")
         return pd.DataFrame()
 
     count = 0
@@ -169,7 +285,7 @@ def run_scan(tickers, use_rsi_filter, status_placeholder, progress_bar):
                 continue
             
             df.dropna(subset=['Close', 'Volume'], inplace=True)
-            if len(df) < 200: continue
+            if len(df) < 50: continue
 
             avg_vol = df['Volume'].iloc[-20:].mean() * df['Close'].iloc[-1]
             is_bdr = ticker.endswith(('34.SA', '35.SA', '39.SA'))
@@ -190,14 +306,14 @@ def run_scan(tickers, use_rsi_filter, status_placeholder, progress_bar):
             row_data = {
                 'Ticker': ticker.replace(".SA", ""),
                 'Preço': round(last_close, 2),
-                'Volume M (R$)': round(avg_vol / 1_000_000, 2), # Em Milhões
+                'Volume M (R$)': round(avg_vol / 1_000_000, 2),
                 'K_80': round(k80, 1),
                 'K_170': round(k170, 1),
                 'RSI': round(last_rsi, 1) if not pd.isna(last_rsi) else 0,
                 'Sinal': ''
             }
             
-            row_data['Sinal'] = get_signal(row_data, df, rsi_series, k80_series, use_rsi_filter)
+            row_data['Sinal'] = get_signal(row_data, df, rsi_series, k80_series, use_rsi_filter, use_fmfi_filter)
             
             if row_data['Sinal'] != "":
                 results.append(row_data)
@@ -206,7 +322,7 @@ def run_scan(tickers, use_rsi_filter, status_placeholder, progress_bar):
         except Exception:
             continue
 
-    status_placeholder.text(f"Finalizado. {success_count} oportunidades encontradas.")
+    status_placeholder.markdown(f"**Finalizado!** Mapeamos {success_count} oportunidades na última sessão.")
     df_res = pd.DataFrame(results)
     if not df_res.empty:
         df_res.sort_values(by='Volume M (R$)', ascending=False, inplace=True)
@@ -214,47 +330,58 @@ def run_scan(tickers, use_rsi_filter, status_placeholder, progress_bar):
     return df_res
 
 # =====================================================
-# UI FRONTEND (STREAMLIT)
+# UI FRONTEND SUPERIOR (STREAMLIT)
 # =====================================================
 
-st.sidebar.title("🦅 Screener Pro")
+st.markdown('<div class="main-title">Screener Estocástico Pro</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Inteligência de varredura ativa conectada em tempo real (Versão Nuvem)</div>', unsafe_allow_html=True)
+
+st.sidebar.markdown("## 🦅 Painel de Controle")
+st.sidebar.markdown("Configure a densidade analítica e o motor de decisão do algoritmo.")
+
+st.sidebar.markdown("---")
+fmfi_filter_on = st.sidebar.toggle("🌐 Confirmação Extrema FMFI", value=True, help="Ativa a confluência via Fourier Transform em janela diária (Ontem/Hoje)")
+rsi_filter_on = st.sidebar.toggle("📉 Filtro Divergência IFR", value=False, help="Restringe ações a pivots divergentes no Índice de Força Relativa.")
 st.sidebar.markdown("---")
 
-rsi_filter_on = st.sidebar.toggle("Filtrar Divergência IFR", value=False)
-run_btn = st.sidebar.button("INICIAR SCAN", type="primary")
-
-st.title("Screener Estocástico Mobile (v6)")
-st.caption("Versão Web responsiva para Android/iOS")
+run_btn = st.sidebar.button("INICIAR SCAN PROFUNDO", type="primary", use_container_width=True)
 
 if run_btn:
     status_text = st.sidebar.empty()
     progress_bar = st.sidebar.progress(0)
     
-    with st.spinner('Analisando o mercado...'):
-        df = run_scan(list(set(TICKERS_BASE)), rsi_filter_on, status_text, progress_bar)
+    with st.spinner('Acessando malha de ativos globais...'):
+        df = run_scan(list(set(TICKERS_BASE)), rsi_filter_on, fmfi_filter_on, status_text, progress_bar)
     
     if not df.empty:
-        st.success(f"Encontrados {len(df)} ativos!")
-        st.dataframe(
-            df, 
-            key="data",
-            hide_index=True,
-            use_container_width=True,
-            column_config={
-                "Ticker": st.column_config.TextColumn("Ativo"),
-                "Preço": st.column_config.NumberColumn("Preço", format="R$ %.2f"),
-                "Volume M (R$)": st.column_config.NumberColumn("Vol (M)", format="%.1f M"),
-                "Sinal": st.column_config.TextColumn("Sinal"),
-                "K_80": None,   # Ocultar
-                "K_170": None,  # Ocultar
-                "RSI": None     # Ocultar
-            }
-        )
+        st.markdown(f"##### Encontramos **{len(df)}** ativos convergindo nos algoritmos:")
         
-        # Color coding in Streamlit isn't as direct as Tkinter tags,
-        # but the dataframe is searchable and sortable natively.
-        
+        # Rendering Cards
+        for idx, row in df.iterrows():
+            badge_class = "badge-buy" if "COMPRA" in row['Sinal'] else "badge-sell"
+            
+            card_html = f"""
+            <div class="glass-card">
+                <div class="asset-info">
+                    <span class="ticker">{row['Ticker']}</span>
+                    <span class="price">R$ {row['Preço']:.2f}</span>
+                </div>
+                
+                <div class="metrics-info">
+                    <div class="metric-box">
+                        <span class="metric-lbl">Volume</span>
+                        <span class="metric-val">{row['Volume M (R$)']}M</span>
+                    </div>
+                </div>
+                
+                <div class="{badge_class}">
+                    {row['Sinal']}
+                </div>
+            </div>
+            """
+            st.markdown(card_html, unsafe_allow_html=True)
+            
     else:
-        st.warning("Nenhum ativo encontrado com os critérios atuais.")
+        st.warning("Nenhum ativo detectado sob as fortes condições matemáticas configuradas.")
 else:
-    st.info("Clique em INICIAR SCAN na barra lateral.")
+    st.info("Algoritmo em repouso. Selecione suas preferências na barra esférica lateral e inicie.")
