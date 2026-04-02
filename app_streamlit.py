@@ -359,12 +359,30 @@ if run_btn:
     if not df.empty:
         st.markdown(f"##### Encontramos **{len(df)}** ativos convergindo nos algoritmos:")
         
-        # Rendering Cards
-        for idx, row in df.iterrows():
-            badge_class = "badge-buy" if "COMPRA" in row['Sinal'] else "badge-sell"
-            
-            card_html = f'<div class="glass-card"><div class="asset-info"><span class="ticker">{row["Ticker"]}</span><span class="price">R$ {row["Preço"]:.2f}</span></div><div class="metrics-info"><div class="metric-box"><span class="metric-lbl">Volume</span><span class="metric-val">{row["Volume M (R$)"]}M</span></div></div><div class="{badge_class}">{row["Sinal"]}</div></div>'
-            st.markdown(card_html, unsafe_allow_html=True)
+        df_buy = df[df['Sinal'].str.contains("COMPRA")]
+        df_sell = df[df['Sinal'].str.contains("VENDA")]
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("<h4 style='text-align: center; color: #00E676; margin-bottom: 20px;'>🛒 Sinais de COMPRA</h4>", unsafe_allow_html=True)
+            if df_buy.empty:
+                st.info("Nenhum sinal de compra agudo detectado hoje.")
+            else:
+                for idx, row in df_buy.iterrows():
+                    badge_class = "badge-buy"
+                    card_html = f'<div class="glass-card"><div class="asset-info"><span class="ticker">{row["Ticker"]}</span><span class="price">R$ {row["Preço"]:.2f}</span></div><div class="metrics-info"><div class="metric-box"><span class="metric-lbl">Volume</span><span class="metric-val">{row["Volume M (R$)"]}M</span></div></div><div class="{badge_class}">{row["Sinal"]}</div></div>'
+                    st.markdown(card_html, unsafe_allow_html=True)
+                    
+        with col2:
+            st.markdown("<h4 style='text-align: center; color: #FF1744; margin-bottom: 20px;'>📉 Sinais de VENDA</h4>", unsafe_allow_html=True)
+            if df_sell.empty:
+                st.info("Nenhum sinal de venda agudo detectado hoje.")
+            else:
+                for idx, row in df_sell.iterrows():
+                    badge_class = "badge-sell"
+                    card_html = f'<div class="glass-card"><div class="asset-info"><span class="ticker">{row["Ticker"]}</span><span class="price">R$ {row["Preço"]:.2f}</span></div><div class="metrics-info"><div class="metric-box"><span class="metric-lbl">Volume</span><span class="metric-val">{row["Volume M (R$)"]}M</span></div></div><div class="{badge_class}">{row["Sinal"]}</div></div>'
+                    st.markdown(card_html, unsafe_allow_html=True)
             
     else:
         st.warning("Nenhum ativo detectado sob as fortes condições matemáticas configuradas.")
