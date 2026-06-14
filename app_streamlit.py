@@ -3,7 +3,6 @@ import pandas as pd
 import yfinance as yf
 import numpy as np
 from datetime import datetime
-from fmfi import get_fmfi_signals
 
 # =====================================================
 # CONFIGURAÇÃO DA PÁGINA E CSS
@@ -214,54 +213,42 @@ def detect_divergence(df, rsi_series, signal_type):
             
     return False
 
-def get_signal(row, df, rsi_series, k80_series, use_rsi_filter=False, use_fmfi_filter=True):
-    kb = row['K_80']
-    ky = row['K_170']
-    
+def get_signal(row, df, rsi_series, k1_series, k2_series, use_rsi_filter=False):
     try:
-        prev_k80 = k80_series.iloc[-2]
-        curr_k80 = k80_series.iloc[-1]
-    except:
-        return "" 
+        prev_k1 = k1_series.iloc[-2]
+        curr_k1 = k1_series.iloc[-1]
+        prev_k2 = k2_series.iloc[-2]
+        curr_k2 = k2_series.iloc[-1]
+    except Exception:
+        return ""
         
     stoch_signal = ""
-    if not (pd.isna(kb) or pd.isna(ky)):
-            if kb < 20 and kb > ky:
-                if curr_k80 >= prev_k80:
-                    stoch_signal = "BUY"
-            elif kb > 80 and kb < ky:
-                if curr_k80 <= prev_k80:
-                    stoch_signal = "SELL"
+    # COMPRA (BUY)
+    if curr_k1 >= prev_k1 and prev_k2 < prev_k1 and curr_k2 >= curr_k1 and curr_k1 < 80:
+        stoch_signal = "BUY"
+    # VENDA (SELL)
+    elif curr_k1 <= prev_k1 and prev_k2 > prev_k1 and curr_k2 <= curr_k1 and curr_k1 > 20:
+        stoch_signal = "SELL"
     
     if not stoch_signal:
         return ""
         
-    if use_fmfi_filter:
-        try:
-            fmfi_sig = get_fmfi_signals(df)
-            if stoch_signal == "BUY" and not fmfi_sig['fmfi_firm_buy']:
-                return ""
-            if stoch_signal == "SELL" and not fmfi_sig['fmfi_firm_sell']:
-                return ""
-        except Exception:
-            return ""
-
     if not use_rsi_filter:
-        return f"COMPRA" if stoch_signal == "BUY" else f"VENDA"
+        return "COMPRA" if stoch_signal == "BUY" else "VENDA"
 
     current_rsi = rsi_series.iloc[-1]
     if stoch_signal == "BUY":
         if current_rsi < 35:
             if detect_divergence(df, rsi_series, "BUY"):
-                return f"COMPRA"
+                return "COMPRA"
     elif stoch_signal == "SELL":
         if current_rsi > 65:
             if detect_divergence(df, rsi_series, "SELL"):
-                return f"VENDA"
+                return "VENDA"
                 
     return ""
 
-def run_scan(tickers, use_rsi_filter, use_fmfi_filter, status_placeholder, progress_bar):
+def run_scan(tickers, use_rsi_filter, status_placeholder, progress_bar):
     results = []
     total = len(tickers)
     
@@ -292,28 +279,35 @@ def run_scan(tickers, use_rsi_filter, use_fmfi_filter, status_placeholder, progr
             if not is_bdr and avg_vol < 1_000_000:
                 continue
             
-            k80_series = calc_stoch_k(df, 80)
-            k80 = k80_series.iloc[-1]
+            k1_series = calc_stoch_k(df, 80)
+            k1 = k1_series.iloc[-1]
             
-            k170 = calc_stoch_k(df, 170).iloc[-1]
+            k2_series = calc_stoch_k(df, 15)
+            k2 = k2_series.iloc[-1]
+            
+            # Calcular suavizações exigidas pela especificação
+            d1_series = k1_series.rolling(window=40).mean()
+            smooth1_series = d1_series.rolling(window=3).mean()
+            d2_series = k2_series.rolling(window=3).mean()
+            smooth2_series = d2_series.rolling(window=9).mean()
             
             rsi_series = calc_rsi(df, 14)
             last_rsi = rsi_series.iloc[-1]
             last_close = df['Close'].iloc[-1]
 
-            if pd.isna(k80) or pd.isna(k170): continue
+            if pd.isna(k1) or pd.isna(k2): continue
 
             row_data = {
                 'Ticker': ticker.replace(".SA", ""),
                 'Preço': round(last_close, 2),
                 'Volume M (R$)': round(avg_vol / 1_000_000, 2),
-                'K_80': round(k80, 1),
-                'K_170': round(k170, 1),
+                'K_80': round(k1, 1),
+                'K_15': round(k2, 1),
                 'RSI': round(last_rsi, 1) if not pd.isna(last_rsi) else 0,
                 'Sinal': ''
             }
             
-            row_data['Sinal'] = get_signal(row_data, df, rsi_series, k80_series, use_rsi_filter, use_fmfi_filter)
+            row_data['Sinal'] = get_signal(row_data, df, rsi_series, k1_series, k2_series, use_rsi_filter)
             
             if row_data['Sinal'] != "":
                 results.append(row_data)
@@ -340,9 +334,6 @@ st.sidebar.markdown("## 🦅 Painel de Controle")
 st.sidebar.markdown("Configure a densidade analítica e o motor de decisão do algoritmo.")
 
 st.sidebar.markdown("---")
-fmfi_filter_on = st.sidebar.toggle("🌐 Confirmação Extrema FMFI", value=True)
-st.sidebar.markdown("<p style='font-size:0.85rem; color:#94a3b8; font-weight:300; margin-bottom:15px; line-height:1.4;'>Garante através da <strong>Transformada de Fourier</strong> que a recomendação só seja exibida se o ativo estiver em uma zona aguda de sobrecompra (VENDA) ou sobrevivência (COMPRA). Minimiza drasticamente os ruídos.</p>", unsafe_allow_html=True)
-
 rsi_filter_on = st.sidebar.toggle("📉 Filtro Divergência IFR", value=False)
 st.sidebar.markdown("<p style='font-size:0.85rem; color:#94a3b8; font-weight:300; margin-bottom:15px; line-height:1.4;'>Exige visualmente uma <strong>divergência</strong> clássica entre o fluxo do preço e o momentum (IFR). Se o preço fez fundo duplo mais baixo e o IFR fez fundo mais alto, a compra é aprovada.</p>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
@@ -354,7 +345,7 @@ if run_btn:
     progress_bar = st.sidebar.progress(0)
     
     with st.spinner('Acessando malha de ativos globais...'):
-        df = run_scan(list(set(TICKERS_BASE)), rsi_filter_on, fmfi_filter_on, status_text, progress_bar)
+        df = run_scan(list(set(TICKERS_BASE)), rsi_filter_on, status_text, progress_bar)
     
     if not df.empty:
         st.markdown(f"##### Encontramos **{len(df)}** ativos convergindo nos algoritmos:")

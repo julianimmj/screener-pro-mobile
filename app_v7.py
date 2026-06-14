@@ -109,49 +109,40 @@ class ScreenerLogic:
                 
         return False
 
-    def get_signal(self, row, df, rsi_series, k80_series, use_rsi_filter=False):
-        # 1. Stoch Check (v4 Logic)
-        kb = row['K_80']
-        ky = row['K_170']
-        
-        # New: K80 Slope Check
-        # Need prev K80
+    def get_signal(self, row, df, rsi_series, k1_series, k2_series, use_rsi_filter=False):
         try:
-            prev_k80 = k80_series.iloc[-2]
-            curr_k80 = k80_series.iloc[-1]
-        except:
+            prev_k1 = k1_series.iloc[-2]
+            curr_k1 = k1_series.iloc[-1]
+            prev_k2 = k2_series.iloc[-2]
+            curr_k2 = k2_series.iloc[-1]
+        except Exception:
             return "" # Not enough data
             
         stoch_signal = ""
-        if not (pd.isna(kb) or pd.isna(ky)):
-             if kb < 20 and kb > ky:
-                 # BUY Slope Logic: Current >= Prev (Rising or Flat)
-                 if curr_k80 >= prev_k80:
-                     stoch_signal = "BUY"
-                     
-             elif kb > 80 and kb < ky:
-                 # SELL Slope Logic: Current <= Prev (Falling or Flat)
-                 if curr_k80 <= prev_k80:
-                     stoch_signal = "SELL"
+        # COMPRA (BUY)
+        if curr_k1 >= prev_k1 and prev_k2 < prev_k1 and curr_k2 >= curr_k1 and curr_k1 < 80:
+            stoch_signal = "BUY"
+        # VENDA (SELL)
+        elif curr_k1 <= prev_k1 and prev_k2 > prev_k1 and curr_k2 <= curr_k1 and curr_k1 > 20:
+            stoch_signal = "SELL"
         
         if not stoch_signal:
             return ""
 
-        # Se filtro DESLIGADO, retorna o sinal puro (mas com slope check já aplicado)
+        # Se filtro DESLIGADO, retorna o sinal puro
         if not use_rsi_filter:
-            return f"COMPRA (Stoch)" if stoch_signal == "BUY" else f"VENDA (Stoch)"
+            return "COMPRA (Stoch)" if stoch_signal == "BUY" else "VENDA (Stoch)"
 
         # 2. RSI Zone Check & Divergence Check (FILTRO LIGADO)
         current_rsi = rsi_series.iloc[-1]
         
         if stoch_signal == "BUY":
-            # Filter: Check Oversold Zone (<30) OR just check Divergence?
-            if current_rsi < 35: # Using 35 as tolerance for "oversold area"
+            if current_rsi < 35:
                 if self.detect_divergence(df, rsi_series, "BUY"):
                     return f"COMPRA (Div {round(current_rsi,0)})"
         
         elif stoch_signal == "SELL":
-            if current_rsi > 65: # Tolerance for overbought
+            if current_rsi > 65:
                 if self.detect_divergence(df, rsi_series, "SELL"):
                     return f"VENDA (Div {round(current_rsi,0)})"
             
@@ -203,11 +194,17 @@ class ScreenerLogic:
                         error_count += 1
                         continue
                     
-                    # Logica Stoch (Apenas 80 e 170)
-                    k80_series = self.calc_stoch_k(df, 80) # Calc full series for slope check
-                    k80 = k80_series.iloc[-1]
+                    k1_series = self.calc_stoch_k(df, 80)
+                    k1 = k1_series.iloc[-1]
                     
-                    k170 = self.calc_stoch_k(df, 170).iloc[-1]
+                    k2_series = self.calc_stoch_k(df, 15)
+                    k2 = k2_series.iloc[-1]
+                    
+                    # Calcular suavizações
+                    d1_series = k1_series.rolling(window=40).mean()
+                    smooth1_series = d1_series.rolling(window=3).mean()
+                    d2_series = k2_series.rolling(window=3).mean()
+                    smooth2_series = d2_series.rolling(window=9).mean()
                     
                     # Logica RSI (14)
                     rsi_series = self.calc_rsi(df, 14)
@@ -215,7 +212,7 @@ class ScreenerLogic:
                     
                     last_close = df['Close'].iloc[-1]
 
-                    if pd.isna(k80) or pd.isna(k170):
+                    if pd.isna(k1) or pd.isna(k2):
                          error_count += 1
                          continue
 
@@ -224,12 +221,12 @@ class ScreenerLogic:
                         'Ticker': ticker.replace(".SA", ""),
                         'Preço': round(last_close, 2),
                         'Volume ($)': avg_vol,
-                        'K_80': round(k80, 1),
-                        'K_170': round(k170, 1),
+                        'K_80': round(k1, 1),
+                        'K_15': round(k2, 1),
                         'RSI': round(last_rsi, 1) if not pd.isna(last_rsi) else 0
                     }
-                    # Passa DF, RSI Series e K80 Series (para checar slope)
-                    row_data['Sinal'] = self.get_signal(row_data, df, rsi_series, k80_series, use_rsi_filter)
+                    # Passa DF, RSI Series, K1 Series e K2 Series
+                    row_data['Sinal'] = self.get_signal(row_data, df, rsi_series, k1_series, k2_series, use_rsi_filter)
                     
                     if row_data['Sinal'] != "":
                         results.append(row_data)
@@ -341,7 +338,7 @@ class App(ctk.CTk):
         style.configure("Treeview.Heading", background="#343638", foreground="white", relief="flat", font=('Arial', 11, 'bold'))
         style.map("Treeview", background=[('selected', '#1f538d')])
 
-        columns = ("Ticker", "Preço", "Sinal", "K 80", "K 170", "RSI", "Volume ($)")
+        columns = ("Ticker", "Preço", "Sinal", "K 80", "K 15", "RSI", "Volume ($)")
         self.tree = ttk.Treeview(self.tree_frame, columns=columns, show="headings", style="Treeview")
         
         for col in columns:
@@ -444,7 +441,7 @@ class App(ctk.CTk):
             
             self.tree.insert("", "end", values=(
                 row['Ticker'], row['Preço'], row['Sinal'], 
-                row['K_80'], row['K_170'], row['RSI'], row['Volume ($)']
+                row['K_80'], row['K_15'], row['RSI'], row['Volume ($)']
             ), tags=(tag,))
             
         self.update_status(f"Tabela atualizada: {len(df_show)} ativos.", log=True)
