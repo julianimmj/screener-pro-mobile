@@ -279,17 +279,19 @@ def run_scan(tickers, use_rsi_filter, status_placeholder, progress_bar):
             if not is_bdr and avg_vol < 1_000_000:
                 continue
             
-            k1_series = calc_stoch_k(df, 80)
+            k1_raw = calc_stoch_k(df, 80)
+            k2_raw = calc_stoch_k(df, 15)
+            
+            # %K1 e %K2 são as linhas principais suavizadas uma vez (conforme visíveis no TradingView)
+            k1_series = k1_raw.rolling(window=40).mean()
+            k2_series = k2_raw.rolling(window=3).mean()
+            
+            # %D1 e %D2 (ou Smooth1 e Smooth2) são as segundas suavizações
+            d1_series = k1_series.rolling(window=3).mean()
+            d2_series = k2_series.rolling(window=9).mean()
+            
             k1 = k1_series.iloc[-1]
-            
-            k2_series = calc_stoch_k(df, 15)
             k2 = k2_series.iloc[-1]
-            
-            # Calcular suavizações exigidas pela especificação
-            d1_series = k1_series.rolling(window=40).mean()
-            smooth1_series = d1_series.rolling(window=3).mean()
-            d2_series = k2_series.rolling(window=3).mean()
-            smooth2_series = d2_series.rolling(window=9).mean()
             
             rsi_series = calc_rsi(df, 14)
             last_rsi = rsi_series.iloc[-1]

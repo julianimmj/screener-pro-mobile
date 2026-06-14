@@ -194,17 +194,19 @@ class ScreenerLogic:
                         error_count += 1
                         continue
                     
-                    k1_series = self.calc_stoch_k(df, 80)
+                    k1_raw = self.calc_stoch_k(df, 80)
+                    k2_raw = self.calc_stoch_k(df, 15)
+                    
+                    # %K1 e %K2 representam as linhas suavizadas uma vez do indicador no TradingView
+                    k1_series = k1_raw.rolling(window=40).mean()
+                    k2_series = k2_raw.rolling(window=3).mean()
+                    
+                    # %D1 e %D2 são as segundas suavizações (Smooth1 e Smooth2)
+                    d1_series = k1_series.rolling(window=3).mean()
+                    d2_series = k2_series.rolling(window=9).mean()
+                    
                     k1 = k1_series.iloc[-1]
-                    
-                    k2_series = self.calc_stoch_k(df, 15)
                     k2 = k2_series.iloc[-1]
-                    
-                    # Calcular suavizações
-                    d1_series = k1_series.rolling(window=40).mean()
-                    smooth1_series = d1_series.rolling(window=3).mean()
-                    d2_series = k2_series.rolling(window=3).mean()
-                    smooth2_series = d2_series.rolling(window=9).mean()
                     
                     # Logica RSI (14)
                     rsi_series = self.calc_rsi(df, 14)
