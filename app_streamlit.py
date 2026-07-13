@@ -2,7 +2,24 @@ import streamlit as st
 import pandas as pd
 import yfinance as yf
 import numpy as np
+import time
 from datetime import datetime
+
+
+def _reset_yfinance_session():
+    """Limpa sessão/crumb do yfinance para forçar reautenticação."""
+    try:
+        import yfinance.data as _yfdata
+        if hasattr(_yfdata, '_crumb') and hasattr(_yfdata, '_cookie'):
+            _yfdata._crumb = None
+            _yfdata._cookie = None
+    except Exception:
+        pass
+    try:
+        if hasattr(yf, 'shared') and hasattr(yf.shared, '_CACHE'):
+            yf.shared._CACHE = {}
+    except Exception:
+        pass
 
 # =====================================================
 # CONFIGURAÇÃO DA PÁGINA E CSS
@@ -253,7 +270,15 @@ def run_scan(tickers, use_rsi_filter, status_placeholder, progress_bar):
     total = len(tickers)
     
     status_placeholder.markdown("*(📡) Extraindo e vetorizando o mercado em 1d (Nuvem de Alta Performance)...*")
-    data = yf.download(tickers, period="2y", interval="1d", group_by='ticker', progress=False, auto_adjust=True, threads=True)
+    data = pd.DataFrame()
+    for attempt in range(2):
+        try:
+            data = yf.download(tickers, period="2y", interval="1d", group_by='ticker', progress=False, auto_adjust=True, threads=True)
+            if not data.empty:
+                break
+        except Exception:
+            _reset_yfinance_session()
+            time.sleep(1.0)
     
     if data is None or data.empty:
         st.error("ERRO: Nenhum dado baixado. Servidores YF indisponíveis.")
