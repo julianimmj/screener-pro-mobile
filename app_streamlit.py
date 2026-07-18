@@ -155,25 +155,33 @@ html, body, [class*="css"]  {
 # =====================================================
 
 TICKERS_BASE = [
-    # IBOVESPA / Principais Ações / Small Caps Líquidas
-    "VALE3.SA", "PETR4.SA", "ITUB4.SA", "BBDC4.SA", "BBAS3.SA", "WEGE3.SA", "ABEV3.SA", "RENT3.SA", "BPAC11.SA", "SUZB3.SA",
-    "ITSA4.SA", "HAPV3.SA", "EQTL3.SA", "RDOR3.SA", "LREN3.SA", "PRIO3.SA", "RADL3.SA", "UGPA3.SA", "GGBR4.SA", "CSAN3.SA",
-    "VBBR3.SA", "B3SA3.SA", "MGLU3.SA", "RAIL3.SA", "EMBJ3.SA", "VIVT3.SA", "CMIG4.SA", "HYPE3.SA", "JBSS32.SA", "TIMS3.SA",
-    "BBSE3.SA", "MBRF3.SA", "CPLE3.SA", "AXIA3.SA", "MOTV3.SA", "SBSP3.SA", "EGIE3.SA", "CPFE3.SA", "TOTS3.SA", "MULT3.SA",
-    "ENEV3.SA", "CSNA3.SA", "TAEE11.SA", "GOAU4.SA", "BRKM5.SA", "AZUL3.SA", "YDUQ3.SA", "USIM5.SA", "CVCB3.SA", "PETR3.SA",
-    "AXIA6.SA", "SANB11.SA", "KLBN11.SA", "VAMO3.SA", "ASAI3.SA", "NATU3.SA", "ALPA4.SA", "BEEF3.SA", "ALOS3.SA", "AZZA3.SA",
-    "DXCO3.SA", "EZTC3.SA", "JHSF3.SA", "MRVE3.SA", "CYRE3.SA", "POSI3.SA", "SLCE3.SA", "SMTO3.SA", "TOTS3.SA", "ENGI11.SA",
-    "ISAE4.SA", "RECV3.SA", "SIMH3.SA", "PCAR3.SA", "QUAL3.SA", "AUAU3.SA", "LIGT3.SA", "COGN3.SA", "IRBR3.SA", "CASH3.SA",
-    "BHIA3.SA", "LWSA3.SA", "FLRY3.SA", "MDIA3.SA", "PSSA3.SA", "IGTI11.SA", "AURE3.SA", "ALUP11.SA", "SAPR11.SA", "CXSE3.SA",
-    "RAPT4.SA", "POMO4.SA", "TASA4.SA", "MYPK3.SA", "SEQL3.SA", "LJQQ3.SA", "GRND3.SA", "RIAA3.SA", "SAUD3.SA",
-    "INTB3.SA", "MLAS3.SA", "AMBP3.SA", "CBAV3.SA", "TTEN3.SA", "AERI3.SA", "MATD3.SA", "ORVR3.SA", "LOGG3.SA", "MOVI3.SA",
-    "JALL3.SA", "ANIM3.SA", "CURY3.SA", "DIRR3.SA",
-    
-    # ETFs Líquidos
+    # ── 200 Ações B3 Validadas (Alta Liquidez) ──
+    "AALR3.SA", "ABEV3.SA", "AERI3.SA", "AGRO3.SA", "AHEB3.SA", "ALLD3.SA", "ALOS3.SA", "ALPA4.SA", "ALUP11.SA", "ALUP3.SA",
+    "ALUP4.SA", "AMBP3.SA", "AMER3.SA", "ANIM3.SA", "APTI4.SA", "ARML3.SA", "ASAI3.SA", "AURE3.SA", "AXIA3.SA", "AZEV3.SA",
+    "AZEV4.SA", "AZUL3.SA", "AZZA3.SA", "B3SA3.SA", "BALM4.SA", "BAZA3.SA", "BBAS3.SA", "BBDC3.SA", "BBDC4.SA", "BBSE3.SA",
+    "BDLL4.SA", "BEEF3.SA", "BEES3.SA", "BGIP3.SA", "BGIP4.SA", "BHIA3.SA", "BLAU3.SA", "BMEB4.SA", "BMOB3.SA", "BNBR3.SA",
+    "BOBR4.SA", "BPAC11.SA", "BRAP4.SA", "BRKM5.SA", "BRSR3.SA", "BRSR6.SA", "BSLI4.SA", "CAML3.SA", "CASH3.SA", "CBAV3.SA",
+    "CEDO3.SA", "CEDO4.SA", "CGAS3.SA", "CGAS5.SA", "CMIG3.SA", "CMIG4.SA", "COGN3.SA", "CPFE3.SA", "CPLE3.SA", "CSAN3.SA",
+    "CSMG3.SA", "CSNA3.SA", "CTKA4.SA", "CTSA3.SA", "CTSA4.SA", "CURY3.SA", "CVCB3.SA", "CXSE3.SA", "CYRE3.SA", "DASA3.SA",
+    "DESK3.SA", "DEXP3.SA", "DEXP4.SA", "DIRR3.SA", "DXCO3.SA", "EALT4.SA", "EGIE3.SA", "EMBJ3.SA", "ENEV3.SA", "ENGI11.SA",
+    "ENMT3.SA", "ENMT4.SA", "EPAR3.SA", "EQTL3.SA", "EVEN3.SA", "EZTC3.SA", "FHER3.SA", "FIQE3.SA", "FLRY3.SA", "FRAS3.SA",
+    "GFSA3.SA", "GGBR3.SA", "GGBR4.SA", "GOAU4.SA", "GRND3.SA", "HAPV3.SA", "HBOR3.SA", "HBRE3.SA", "HBSA3.SA", "HOOT4.SA",
+    "HYPE3.SA", "IFCM3.SA", "IGTI11.SA", "INEP4.SA", "INTB3.SA", "IRBR3.SA", "ISAE3.SA", "ISAE4.SA", "ITSA3.SA", "ITSA4.SA",
+    "ITUB4.SA", "JALL3.SA", "JBSS32.SA", "JHSF3.SA", "JSLG3.SA", "KEPL3.SA", "KLBN11.SA", "LAND3.SA", "LAVV3.SA", "LEVE3.SA",
+    "LIGT3.SA", "LJQQ3.SA", "LOGG3.SA", "LOGN3.SA", "LPSB3.SA", "LREN3.SA", "LWSA3.SA", "MATD3.SA", "MDIA3.SA", "MEAL3.SA",
+    "MGLU3.SA", "MLAS3.SA", "MOTV3.SA", "MOVI3.SA", "MRVE3.SA", "MULT3.SA", "MWET4.SA", "MYPK3.SA", "NGRD3.SA", "NUTR3.SA",
+    "OIBR3.SA", "OIBR4.SA", "ONCO3.SA", "OPCT3.SA", "ORVR3.SA", "OSXB3.SA", "PCAR3.SA", "PDGR3.SA", "PETR3.SA", "PETR4.SA",
+    "PFRM3.SA", "PGMN3.SA", "PINE4.SA", "PLPL3.SA", "PNVL3.SA", "POMO3.SA", "POMO4.SA", "POSI3.SA", "PRIO3.SA", "PRNR3.SA",
+    "PSSA3.SA", "QUAL3.SA", "RADL3.SA", "RAIL3.SA", "RAPT4.SA", "RCSL3.SA", "RCSL4.SA", "RDOR3.SA", "RECV3.SA", "RENT3.SA",
+    "ROMI3.SA", "RPMG3.SA", "SANB11.SA", "SANB3.SA", "SANB4.SA", "SAPR11.SA", "SAPR3.SA", "SAPR4.SA", "SBFG3.SA", "SBSP3.SA",
+    "SEQL3.SA", "SHOW3.SA", "SHUL4.SA", "SIMH3.SA", "SLCE3.SA", "SMFT3.SA", "SMTO3.SA", "SOJA3.SA", "SUZB3.SA", "SYNE3.SA",
+    "TAEE11.SA", "TAEE3.SA", "TAEE4.SA", "TASA4.SA", "TEKA4.SA", "TEND3.SA", "TFCO4.SA", "TGMA3.SA", "TIMS3.SA", "TOTS3.SA",
+
+    # ── ETFs Líquidos (12) ──
     "BOVA11.SA", "SMAL11.SA", "IVVB11.SA", "HASH11.SA", "XINA11.SA", "NASD11.SA", "GOLD11.SA", 
     "BOVV11.SA", "DIVO11.SA", "FIND11.SA", "GOVE11.SA", "MATB11.SA",
-    
-    # BDRs (Top Tech & Global)
+
+    # ── BDRs Globais & Tech (45) ──
     "AAPL34.SA", "MSFT34.SA", "AMZO34.SA", "NVDC34.SA", "GOGL34.SA", "TSLA34.SA", "M1TA34.SA", "NFLX34.SA", "BABA34.SA", 
     "DISB34.SA", "MELI34.SA", "COCA34.SA", "PEPB34.SA", "PGCO34.SA", "JNJB34.SA", "PFIZ34.SA", "WFCO34.SA", "JPMC34.SA",
     "VISA34.SA", "MSCD34.SA", "ADBE34.SA", "PYPL34.SA", "ITLC34.SA", "A1MD34.SA", "QCOM34.SA", "AVGO34.SA", "SSFO34.SA",
@@ -305,13 +313,13 @@ def run_scan(tickers, use_rsi_filter, status_placeholder, progress_bar):
                 continue
             
             k1_raw = calc_stoch_k(df, 80)
-            k2_raw = calc_stoch_k(df, 15)
+            k2_raw = calc_stoch_k(df, 40)
             
-            # %K1 e %K2 são as linhas principais suavizadas uma vez (conforme visíveis no TradingView)
+            # %K1 (80, 40) e %K2 (40, 8)
             k1_series = k1_raw.rolling(window=40).mean()
-            k2_series = k2_raw.rolling(window=3).mean()
+            k2_series = k2_raw.rolling(window=8).mean()
             
-            # %D1 e %D2 (ou Smooth1 e Smooth2) são as segundas suavizações
+            # %D1 e %D2
             d1_series = k1_series.rolling(window=3).mean()
             d2_series = k2_series.rolling(window=9).mean()
             
@@ -329,7 +337,7 @@ def run_scan(tickers, use_rsi_filter, status_placeholder, progress_bar):
                 'Preço': round(last_close, 2),
                 'Volume M (R$)': round(avg_vol / 1_000_000, 2),
                 'K_80': round(k1, 1),
-                'K_15': round(k2, 1),
+                'K_40': round(k2, 1),
                 'RSI': round(last_rsi, 1) if not pd.isna(last_rsi) else 0,
                 'Sinal': ''
             }
