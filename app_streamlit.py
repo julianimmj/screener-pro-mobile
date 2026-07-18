@@ -313,11 +313,11 @@ def run_scan(tickers, use_rsi_filter, status_placeholder, progress_bar):
                 continue
             
             k1_raw = calc_stoch_k(df, 80)
-            k2_raw = calc_stoch_k(df, 40)
+            k2_raw = calc_stoch_k(df, 15)
             
-            # %K1 (80, 40) e %K2 (40, 8)
+            # %K1 (80, 40) e %K2 (15, 3)
             k1_series = k1_raw.rolling(window=40).mean()
-            k2_series = k2_raw.rolling(window=8).mean()
+            k2_series = k2_raw.rolling(window=3).mean()
             
             # %D1 e %D2
             d1_series = k1_series.rolling(window=3).mean()
@@ -337,7 +337,7 @@ def run_scan(tickers, use_rsi_filter, status_placeholder, progress_bar):
                 'Preço': round(last_close, 2),
                 'Volume M (R$)': round(avg_vol / 1_000_000, 2),
                 'K_80': round(k1, 1),
-                'K_40': round(k2, 1),
+                'K_15': round(k2, 1),
                 'RSI': round(last_rsi, 1) if not pd.isna(last_rsi) else 0,
                 'Sinal': ''
             }

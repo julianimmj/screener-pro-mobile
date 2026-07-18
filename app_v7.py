@@ -190,11 +190,11 @@ class ScreenerLogic:
                         continue
                     
                     k1_raw = self.calc_stoch_k(df, 80)
-                    k2_raw = self.calc_stoch_k(df, 40)
+                    k2_raw = self.calc_stoch_k(df, 15)
                     
-                    # %K1 (80, 40) e %K2 (40, 8)
+                    # %K1 (80, 40) e %K2 (15, 3)
                     k1_series = k1_raw.rolling(window=40).mean()
-                    k2_series = k2_raw.rolling(window=8).mean()
+                    k2_series = k2_raw.rolling(window=3).mean()
                     
                     # %D1 e %D2 são as segundas suavizações
                     d1_series = k1_series.rolling(window=3).mean()
@@ -217,7 +217,7 @@ class ScreenerLogic:
                         'Preço': round(last_close, 2),
                         'Volume ($)': avg_vol,
                         'K_80': round(k1, 1),
-                        'K_40': round(k2, 1),
+                        'K_15': round(k2, 1),
                         'RSI': round(last_rsi, 1) if not pd.isna(last_rsi) else 0
                     }
                     row_data['Sinal'] = self.get_signal(row_data, df, rsi_series, k1_series, k2_series, use_rsi_filter)
